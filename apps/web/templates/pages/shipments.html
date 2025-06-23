@@ -1,0 +1,122 @@
+{% extends 'layout.html' %}
+
+{% load static %}
+
+{% block customCSS %}
+    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.css" rel="stylesheet" integrity="sha384-2Kog+xBHckFllab8GPEP0fmBUYJmdKFV6H8W6aCAO+er+nOxf6BKbg/pmKdwB/5l" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/shipments.css' %}">
+{% endblock %}
+
+{% block customJS %}
+    <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.js" integrity="sha384-HNFSeuNc7s2HGzGjNFV/i0XipmC7zJwvuovdipYIHXhmXWV2bBAj7AQ3A03h5wiI" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="{% static 'js/shipments.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    {% include 'components/navbar.html' %}
+    <div class="container">
+        <table class="table table-bordered" id="shipmentsTable">
+            <thead>
+                <tr>
+                    <th class="text-center align-middle"><i class="ti ti-info-circle-filled fs-3"></i></th>
+                    <th scope="col">Numero de envio</th>
+                    <th scope="col">Remitente</th>
+                    <th scope="col">Destinatario</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="d-flex flex-column gap-2 position-fixed bottom-0 end-0 m-3">
+        <button type="button" class="btn btn-primary d-flex justify-content-center align-items-center py-2" id="showConfig">
+            <i class="ti ti-settings fs-5"></i>
+        </button>
+        <button type="button" class="btn btn-warning d-flex justify-content-center align-items-center py-2" id="scanQr">
+            <i class="ti ti-qrcode fs-5"></i>
+        </button>
+        <button type="button" class="btn btn-success d-flex justify-content-center align-items-center py-2" id="showShipment">
+            <i class="ti ti-package-import fs-5"></i>
+        </button>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="shipmentModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo envio</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="shipmentForm" class="d-flex flex-column gap-3">
+                        <div class="form-floating" id="senderContainer">
+                            <input type="text" class="form-control shadow-none" placeholder="@" name="sender" id="senderInput">
+                            <label for="senderInput">Remitente</label>
+                        </div>
+                        <div class="form-floating">
+                            <input type="text" class="form-control shadow-none" placeholder="@" name="recipient" id="recipientInput">
+                            <label for="recipientInput">Destinatario</label>
+                        </div>
+                        <div class="form-floating">
+                            <input type="number" class="form-control shadow-none" placeholder="@" name="phone" id="phoneInput">
+                            <label for="phoneInput">Numero de celular</label>
+                        </div>
+                        <div class="d-flex flex-column flex-md-row gap-3">
+                            <div class="flex-fill">
+                                <select class="form-select py-3 shadow-none" id="typeSelect"></select>
+                            </div>
+                            <div class="flex-fill">
+                                <select class="form-select py-3 shadow-none" id="priceSelect"></select>
+                            </div>
+                        </div>
+                        <div class="form-floating" id="envelopeContainer">
+                            <input type="number" class="form-control shadow-none" placeholder="@" name="envelope_amount" id="envelopeInput">
+                            <label for="envelopeInput">Importe de sobres</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="shipmentButton">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="qrModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Escanear QR</h5>
+              <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" >
+                <div id="qr-reader"></div>
+                <div class="d-none p-3" id="qrSpinner">
+                    <h2 class="fs-4 text-center">Procesando</h2>
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status"></div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="configModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Configuracion de impresora</h5>
+              <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <select class="form-select py-3 shadow-none" id="printerSelect"></select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="printerButton">Guardar</button>
+            </div>
+          </div>
+        </div>
+    </div>
+{% endblock %}

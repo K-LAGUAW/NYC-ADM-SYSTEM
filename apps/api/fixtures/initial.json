@@ -1,0 +1,117 @@
+[
+    {
+        "model": "api.PackageTypes",
+        "pk": 1,
+        "fields": {
+            "name": "Paqueteria",
+            "abbreviation": "PAQ"
+        }
+    },
+    {
+        "model": "api.PackageTypes",
+        "pk": 2,
+        "fields": {
+            "name": "Turismo",
+            "abbreviation": "TUR"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 1,
+        "fields": {
+            "name": "Sobre",
+            "mount": 0,
+            "abbreviation": "SOB"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 2,
+        "fields": {
+            "name": "Chico",
+            "mount": 6000,
+            "abbreviation": "CHI"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 3,
+        "fields": {
+            "name": "Mediano",
+            "mount": 8000,
+            "abbreviation": "MED"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 4,
+        "fields": {
+            "name": "Normal",
+            "mount": 10000,
+            "abbreviation": "NOR"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 5,
+        "fields": {
+            "name": "Semi Grande",
+            "mount": 12000,
+            "abbreviation": "SEG"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 6,
+        "fields": {
+            "name": "Grande Normal",
+            "mount": 15000,
+            "abbreviation": "GRN"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 7,
+        "fields": {
+            "name": "Grande",
+            "mount": 18000,
+            "abbreviation": "GRA"
+        }
+    },
+    {
+        "model": "api.PackagePrices",
+        "pk": 8,
+        "fields": {
+            "name": "Grande Pesado/Fragil",
+            "mount": 20000,
+            "abbreviation": "GRP"
+        }
+    },
+    {
+        "model": "api.Parameters",
+        "pk": 1,
+        "fields": {
+            "name": "whatsapp_url",
+            "value": "",
+            "description": "URL de la API para enviar mensajes por whatsapp."
+        }
+    },
+    {
+        "model": "api.Parameters",
+        "pk": 2,
+        "fields": {
+            "name": "message_paq",
+            "value": "",
+            "description": "Plantilla de mensaje de whatsapp para bulto de paqueteria."
+        }
+    },
+    {
+        "model": "api.Parameters",
+        "pk": 3,
+        "fields": {
+            "name": "message_tur",
+            "value": "",
+            "description": "Plantilla de mensaje de whatsapp para bulto de turismo."
+        }
+    }
+]

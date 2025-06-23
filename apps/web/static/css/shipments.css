@@ -1,0 +1,26 @@
+* {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: normal;
+    font-style: normal;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+input[type=number] { -moz-appearance:textfield; }
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+td.dt-control.dtr-control::before {
+    display: none !important;
+}
+
+.container {
+    padding-top: 70px;
+}

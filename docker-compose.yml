@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  web:  
+    build: .
+    command: python manage.py runserver_plus --cert-file cert.pem --key-file key.pem 0.0.0.0:5000
+    ports:
+      - "5000:5000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=46@a01os_&53es#5_q@*#s)wcci4vnwk-e^#11#yt=gm8c(c+vr
+      - ALLOWED_HOSTS=*
