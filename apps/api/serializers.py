@@ -29,9 +29,10 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)
     update_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)
 
-    class Meta: 
+    class Meta:
         model = Orders
         fields = '__all__'
+        read_only_fields = ('tracking_number', 'status')
 
 class ShipmentCreateSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)

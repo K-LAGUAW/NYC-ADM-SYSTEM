@@ -1,7 +1,10 @@
 const showOrder = document.getElementById("showOrder");
+const createOrder = document.getElementById("createOrder");
 const orderForm = document.getElementById("orderForm");
 const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
+const orderError = document.getElementById('orderError');
 const alpineOrder = Alpine.$data(document.getElementById('orderForm'));
+const envelopeInput = document.getElementById('envelopeInput');
 const provinceSelect = document.getElementById('provinceSelect');
 const localitySelect = document.getElementById('localitySelect');
 
@@ -43,6 +46,20 @@ function showDetails(data) {
         `
     );
 };
+
+function getCookie(cookieName) {
+    const name = cookieName + '=';
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookieArray = decodedCookie.split(';');
+
+    for (let cookie of cookieArray) {
+        cookie = cookie.trim(); 
+        if (cookie.indexOf(name) === 0) {
+            return cookie.substring(name.length, cookie.length);
+        }
+    }
+    return null;
+};  
 
 function initializeTable() {
     if (table) {
@@ -107,6 +124,29 @@ function initializeTable() {
     });
 };
 
+createOrder.addEventListener('click', async () => {
+    let formData = new FormData(orderForm);
+
+    try {
+        let response = await fetch('/api/v1/create_order/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        let data = await response.json();
+        console.log(data);
+
+        if (!response.ok) {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error(error);
+        return;
+    }
+});
+
 showOrder.addEventListener('click', async () => {
     provinceSelect.replaceChildren(provinceSelect.firstElementChild);
     provinceSelect.selectedIndex = 0;
@@ -116,12 +156,30 @@ showOrder.addEventListener('click', async () => {
         let response = await fetch('https://apis.datos.gob.ar/georef/api/provincias');
         let data = await response.json();
 
-        const allowedProvinceIds = ['02', '06', '14', '18', '22', '30', '34'];
-        data.provincias
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const naturalSort = (a, b) => {
+            return a.nombre.localeCompare(
+                b.nombre,
+                'es',
+                {
+                    sensitivity: 'base',
+                    numeric: true
+                }
+            );
+        };
+
+        const orderedProvinces = data.provincias.sort(naturalSort);
+
+        const allowedProvinceIds = ['02', '06', '14', '18', '22', '30', '34', '82'];
+
+        orderedProvinces
             .filter(province => allowedProvinceIds.includes(province.id.toString()))
             .forEach(province => {
                 let option = document.createElement('option');
-                option.value = province.id;
+                option.value = province.nombre;
                 option.text = province.nombre;
                 provinceSelect.appendChild(option);
             });
@@ -141,14 +199,32 @@ provinceSelect.addEventListener('change', async (e) => {
         let response = await fetch(`https://apis.datos.gob.ar/georef/api/municipios?provincia=${provinceId}&campos=id,nombre&max=1000`);
         let data = await response.json();
 
-        data.municipios.forEach(locality => {
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const naturalSort = (a, b) => {
+            return a.nombre.localeCompare(
+                b.nombre,
+                'es',
+                {
+                    sensitivity: 'base',
+                    numeric: true
+                }
+            );
+        };
+
+        const orderedLocations = data.municipios.sort(naturalSort);
+
+        orderedLocations.forEach(locality => {
             let option = document.createElement('option');
-            option.value = locality.id;
-            option.text = locality.nombre;
+            option.value = locality.nombre;
+            option.textContent = locality.nombre;
             localitySelect.appendChild(option);
         });
     } catch (error) {
         console.error(error);
+        localitySelect.innerHTML = '<option selected disabled>Error</option>';
         return;
     }
 });

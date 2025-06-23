@@ -87,15 +87,22 @@ class Orders(models.Model):
 
     tracking_number = models.CharField(max_length=11, primary_key=True, editable=False, verbose_name="Numero de seguimiento")
     creation_date = models.DateTimeField(auto_now_add=True, editable=False, verbose_name="Fecha de creacion")
-    update_date = models.DateTimeField(auto_now=True, verbose_name="Fecha de actualizacion")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDIENTE", verbose_name="Estado")
+    update_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de actualizacion")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="REC", verbose_name="Estado")
     supplier = models.CharField(max_length=50, verbose_name="Proveedor")
-    recipient = models.CharField(max_length=50, verbose_name="Destinatario")
+    local_address = models.CharField(max_length=255, blank=True, null=True, verbose_name="Direccion local")
+    customer = models.CharField(max_length=50, verbose_name="Cliente")
+    phone = models.CharField(max_length=11, verbose_name="Telefono")
+    province = models.CharField(max_length=50, verbose_name="Provincia")
+    locality = models.CharField(max_length=50, verbose_name="Localidad")
+    envelope_amount = models.PositiveIntegerField(blank=True, null=True, verbose_name="Importe de sobre")
     package_pickup = models.BooleanField(verbose_name="Recogida de paquete")
+    total_amount = models.PositiveIntegerField(null=True, blank=True, verbose_name="Importe total")
 
     class Meta:
         verbose_name = "orden"
         verbose_name_plural = "ordenes"
 
     def __str__(self):
-        return f"{self.tracking_number} - {self.creation_date}"
+        formatted_date = self.update_date.strftime("%Y-%m-%d %H:%M")
+        return f"{self.tracking_number} - {self.status} | Actualizado: {formatted_date}"

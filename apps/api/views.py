@@ -4,7 +4,7 @@ from .models import Orders, Shipments, Parameters, PackagePrices, PackageTypes
 from .serializers import OrderCreateSerializer, OrderSerializer, ShipmentSerializer, ShipmentSearchSerializer, ShipmentCreateSerializer, PackagePricesSerializer, PackageTypesSerializer
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework.response import Response, Serializer
 from rest_framework.generics import ListAPIView
 
 from django.shortcuts import get_object_or_404
@@ -19,7 +19,47 @@ class ShipmentsView(ListAPIView):
     serializer_class = ShipmentSerializer
 
 class CreateOrderView(APIView):
-    serializer_class = OrderCreateSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = OrderCreateSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response({
+                'message': 'Faltan los campos requeridos',
+                'errors': serializer.errors
+            }, status=400)
+
+        try:
+            validated_data = serializer.validated_data
+
+            total = 0
+
+            if validated_data.get('package_pickup'):
+                total += 2500
+
+            if validated_data.get('envelope_amount'):
+                total += validated_data['envelope_amount'] * 0.01
+            
+            validated_data['supplier'] = validated_data['supplier'].capitalize()
+            validated_data['local_address'] = validated_data['local_address'].capitalize()
+            validated_data['customer'] = validated_data['customer'].capitalize()
+
+            print(total)
+
+            order = Orders.objects.create(
+                tracking_number=f"ORD-{str(uuid.uuid4())[:8].upper()}",
+                total_amount=total,
+                **validated_data
+            )
+
+            return Response({
+                'message': 'Orden creada',
+                'order': OrderSerializer(order).data
+            }, status=201)
+        except Exception as e:
+            print(e)
+            return Response({
+                'message': f'Error interno: {e}',
+            }, status=400)
 
 class CreateShipmentView(APIView):
     serializer_class = ShipmentCreateSerializer
