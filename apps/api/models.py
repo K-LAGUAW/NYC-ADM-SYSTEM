@@ -90,14 +90,15 @@ class Orders(models.Model):
     update_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de actualizacion")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="REC", verbose_name="Estado")
     supplier = models.CharField(max_length=50, verbose_name="Proveedor")
-    local_address = models.CharField(max_length=255, blank=True, null=True, verbose_name="Direccion local")
+    local_address = models.CharField(max_length=50, blank=True, null=True, verbose_name="Direccion local")
     customer = models.CharField(max_length=50, verbose_name="Cliente")
     phone = models.CharField(max_length=11, verbose_name="Telefono")
     province = models.CharField(max_length=50, verbose_name="Provincia")
     locality = models.CharField(max_length=50, verbose_name="Localidad")
     envelope_amount = models.PositiveIntegerField(blank=True, null=True, verbose_name="Importe de sobre")
+    supplier_payment = models.BooleanField(verbose_name="Pago del proveedor")
     package_pickup = models.BooleanField(verbose_name="Recogida de paquete")
-    total_amount = models.PositiveIntegerField(null=True, blank=True, verbose_name="Importe total")
+    total_amount = models.PositiveIntegerField(blank=True, null=True, verbose_name="Importe total")
 
     class Meta:
         verbose_name = "orden"

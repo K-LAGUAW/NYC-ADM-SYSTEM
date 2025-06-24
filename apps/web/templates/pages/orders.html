@@ -3,12 +3,14 @@
 {% load static %}
 
 {% block customCSS %}
-    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.css" rel="stylesheet" integrity="sha384-2Kog+xBHckFllab8GPEP0fmBUYJmdKFV6H8W6aCAO+er+nOxf6BKbg/pmKdwB/5l" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.css" integrity="sha384-2Kog+xBHckFllab8GPEP0fmBUYJmdKFV6H8W6aCAO+er+nOxf6BKbg/pmKdwB/5l" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="{% static 'css/orders.css' %}">
 {% endblock %}
 
 {% block customJS %}
     <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.js" integrity="sha384-HNFSeuNc7s2HGzGjNFV/i0XipmC7zJwvuovdipYIHXhmXWV2bBAj7AQ3A03h5wiI" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" integrity="sha256-PtHu0lJIiSHfZeNj1nFd6wTX+Squ255SGZ/fc8seCtM=" crossorigin="anonymous"></script>
     <script src="{% static 'js/orders.js' %}"></script>
 {% endblock %}
@@ -100,7 +102,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-check form-switch">
-                                <input class="form-check-input shadow-none" type="checkbox" role="switch" id="payCheckbox" x-model="showEnvelope">
+                                <input class="form-check-input shadow-none" type="checkbox" role="switch" name="supplier_payment" id="payCheckbox" x-model="showEnvelope">
                                 <label class="form-check-label fw-semibold" for="payCheckbox">Pago a proveedor</label>
                             </div>
                         </div>

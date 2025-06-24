@@ -19,7 +19,6 @@ class PaymentsTypesAdmin(admin.ModelAdmin):
 class ParametersAdmin(admin.ModelAdmin):
     pass
 
-
 @admin.register(Orders)
 class OrdersAdmin(admin.ModelAdmin):
     pass

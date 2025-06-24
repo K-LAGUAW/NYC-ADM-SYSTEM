@@ -1,18 +1,51 @@
 const showOrder = document.getElementById("showOrder");
 const createOrder = document.getElementById("createOrder");
 const orderForm = document.getElementById("orderForm");
+const inputsForm = orderForm.querySelectorAll('[name]');
 const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
 const orderError = document.getElementById('orderError');
 const alpineOrder = Alpine.$data(document.getElementById('orderForm'));
 const envelopeInput = document.getElementById('envelopeInput');
 const provinceSelect = document.getElementById('provinceSelect');
 const localitySelect = document.getElementById('localitySelect');
+const pickupCheckbox = document.getElementById('pickupCheckbox');
+const payCheckbox = document.getElementById('payCheckbox');
+const addressInput = document.getElementById('addressInput');
+const envelope_amount = document.getElementById('envelope_amount');
 
 let table;
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeTable();
 });
+
+function showNotification(icon, title, timer = 3000){
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: timer,
+        showClass: {
+            popup: `
+                animate__animated
+                animate__fadeInRight
+                animate__faster
+            `
+        },
+        hideClass: {
+            popup: `
+                animate__animated
+                animate__fadeOutRight
+                animate__faster
+            `
+        }
+    });
+
+    Toast.fire({
+        icon: icon,
+        title: title
+    });
+};
 
 function showDetails(data) {
     return (
@@ -136,13 +169,28 @@ createOrder.addEventListener('click', async () => {
             }
         });
         let data = await response.json();
-        console.log(data);
 
         if (!response.ok) {
-            throw new Error(data.message);
+            inputsForm.forEach(inputElement => {
+                const errorFields = data.fields;
+                const fieldName = inputElement.name;
+                
+                if (errorFields.includes(fieldName)) {
+                    inputElement.classList.add('is-invalid');
+                } else {
+                    inputElement.classList.remove('is-invalid');
+                }
+            });
+            showNotification(data.type, data.message);
+            return;
         }
+
+        showNotification(data.type, data.message);
+
+        orderForm.reset();
+        orderModal.hide();
     } catch (error) {
-        console.error(error);
+        console.log(error.message);
         return;
     }
 });
@@ -238,6 +286,10 @@ orderModal._element.addEventListener('hidden.bs.modal', () => {
 
     provinceSelect.selectedIndex = 0;
     localitySelect.selectedIndex = 0;
+
+    inputsForm.forEach(inputElement => {
+        inputElement.classList.remove('is-invalid');
+    });
 
     orderForm.reset();
 });

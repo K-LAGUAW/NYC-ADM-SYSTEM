@@ -1,5 +1,6 @@
 import requests
 import uuid
+import logging
 from .models import Orders, Shipments, Parameters, PackagePrices, PackageTypes
 from .serializers import OrderCreateSerializer, OrderSerializer, ShipmentSerializer, ShipmentSearchSerializer, ShipmentCreateSerializer, PackagePricesSerializer, PackageTypesSerializer
 
@@ -9,6 +10,8 @@ from rest_framework.generics import ListAPIView
 
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+
+logger = logging.getLogger(__name__)
 
 class OrdersView(ListAPIView):
     queryset = Orders.objects.filter(status__in=['REC']).order_by('-creation_date')
@@ -23,9 +26,12 @@ class CreateOrderView(APIView):
         serializer = OrderCreateSerializer(data=request.data)
         
         if not serializer.is_valid():
+            error_fields = list(serializer.errors.keys())
+
             return Response({
-                'message': 'Faltan los campos requeridos',
-                'errors': serializer.errors
+                'type': 'warning',
+                'message': 'Complete los campos requeridos',
+                'fields': error_fields
             }, status=400)
 
         try:
@@ -39,11 +45,11 @@ class CreateOrderView(APIView):
             if validated_data.get('envelope_amount'):
                 total += validated_data['envelope_amount'] * 0.01
             
-            validated_data['supplier'] = validated_data['supplier'].capitalize()
-            validated_data['local_address'] = validated_data['local_address'].capitalize()
-            validated_data['customer'] = validated_data['customer'].capitalize()
+            validated_data['supplier'] = validated_data['supplier'].upper()
+            validated_data['customer'] = validated_data['customer'].upper()
 
-            print(total)
+            if validated_data.get('local_address'):
+                validated_data['local_address'] = validated_data['local_address'].upper()
 
             order = Orders.objects.create(
                 tracking_number=f"ORD-{str(uuid.uuid4())[:8].upper()}",
@@ -52,14 +58,18 @@ class CreateOrderView(APIView):
             )
 
             return Response({
-                'message': 'Orden creada',
+                'type': 'success',
+                'message': 'Orden creada con exito',
                 'order': OrderSerializer(order).data
             }, status=201)
+
         except Exception as e:
-            print(e)
+            logger.error(f"Ocurrio un error inesperado en la vista", exc_info=True)
+
             return Response({
-                'message': f'Error interno: {e}',
-            }, status=400)
+                'type': 'error',
+                'message': f'Ocurrio un error interno en el servidor: {e}',
+            }, status=500)
 
 class CreateShipmentView(APIView):
     serializer_class = ShipmentCreateSerializer
