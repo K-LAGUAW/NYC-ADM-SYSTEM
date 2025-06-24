@@ -20,10 +20,14 @@ class ShipmentSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M")
     update_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M")
+    status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Orders
         fields = '__all__'
+
+    def get_status_display(self, obj):
+        return obj.get_status_display()
 
 class OrderCreateSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)

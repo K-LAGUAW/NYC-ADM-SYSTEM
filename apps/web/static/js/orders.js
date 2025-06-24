@@ -52,22 +52,22 @@ function showDetails(data) {
         `
         <div class="d-flex flex-column my-2">
             <div class="text-center mb-3">
-                <h2 class="text-decoration-underline link-offset-1 fs-4">Detalles del envio</h2>
+                <h2 class="text-decoration-underline link-offset-1 fs-4">Detalles de la orden</h2>
             </div>
             <div class="d-flex flex-column flex-lg-row align-items-center justify-content-center justify-content-md-around mb-3">
                 <div class="shipment-details text-center">
-                    <p><strong>Fecha de envio:</strong> ${data.creation_date}</p>
+                    <p><strong>Fecha de creacion:</strong> ${data.creation_date}</p>
                     <p><strong>Numero de seguimiento:</strong> ${data.tracking_number}</p>
-                    <p><strong>Remitente:</strong> ${data.sender}</p>
-                    <p><strong>Destinatario:</strong> ${data.recipient}</p>
+                    <p><strong>Proveedor:</strong> ${data.supplier}</p>
+                    <p class="mb-0"><strong>Cliente:</strong> ${data.customer}</p>
                 </div>
                 <div class="shipment-status text-center">
-                    <p><strong>Fecha de actualizacion:</strong> ${data.update_date}</p>
+                    <p><strong>Fecha de entrega:</strong> ${data.update_date}</p>
                     <p><strong>Numero de telefono:</strong> ${data.phone}</p>
-                    <p><strong>Estado:</strong> ${data.status.name}</p>
-                    <div class="d-flex gap-2 align-items-center justify-content-center">
-                        <p class="text-decoration-underline link-offset-1 fs-4 m-1">Total:</p>
-                        <p class="fs-4 bg-success rounded-pill d-inline-block px-3 text-white m-0">$ ${data.total_amount}</p>
+                    <p><strong>Estado:</strong> ${data.status_display}</p>
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <button type="button" class="btn btn-success">Confirmar</button>
+                        <button type="button" class="btn btn-danger">Eliminar</button>
                     </div>
                 </div>
             </div>
@@ -115,7 +115,6 @@ function initializeTable() {
         columns: [
             {
                 className: 'dt-control',
-                orderable: false,
                 data: null,
                 defaultContent: '<i class="ti ti-id fs-4"></i>'
             },  
@@ -124,15 +123,19 @@ function initializeTable() {
                 responsivePriority: 2
             },
             { 
-                data: 'sender',
+                data: 'supplier',
                 responsivePriority: 3
             },
             { 
-                data: 'recipient',
+                data: 'customer',
                 responsivePriority: 1
+            },
+            { 
+                data: 'total_amount',
+                responsivePriority: 4
             }
         ],
-        order: [1],
+        ordering: false,
         processing: true,
         responsive: true,
         scrollY: '67vh',

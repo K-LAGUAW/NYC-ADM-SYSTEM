@@ -24,7 +24,7 @@ class ShipmentsView(ListAPIView):
 class CreateOrderView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = OrderCreateSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             error_fields = list(serializer.errors.keys())
 
@@ -36,7 +36,7 @@ class CreateOrderView(APIView):
 
         try:
             validated_data = serializer.validated_data
-
+            
             total = 0
 
             if validated_data.get('package_pickup'):
