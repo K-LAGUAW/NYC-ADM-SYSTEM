@@ -12,22 +12,24 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         return {
-            'id': obj.status.id,
             'name': obj.status.name,
             'abbreviation': obj.status.abbreviation
-        }   
+        }
 
 class OrderSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M")
     update_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M")
-    status_display = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Orders
         fields = '__all__'
 
-    def get_status_display(self, obj):
-        return obj.get_status_display()
+    def get_status(self, obj):
+        return {
+            'name': obj.status.name,
+            'abbreviation': obj.status.abbreviation
+        }
 
 class OrderCreateSerializer(serializers.ModelSerializer):
     creation_date = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)

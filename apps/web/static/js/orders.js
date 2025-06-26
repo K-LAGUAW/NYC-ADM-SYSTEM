@@ -1,18 +1,24 @@
-const showOrder = document.getElementById("showOrder");
-const createOrder = document.getElementById("createOrder");
+const orderModal = document.getElementById('orderModal');
+const orderInstance = bootstrap.Modal.getOrCreateInstance(orderModal);
+const detailModal = document.getElementById('detailModal');
+const detailInstance = bootstrap.Modal.getOrCreateInstance(detailModal);
+
 const orderForm = document.getElementById("orderForm");
 const inputsForm = orderForm.querySelectorAll('[name]');
-const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
-const orderError = document.getElementById('orderError');
-const alpineOrder = Alpine.$data(document.getElementById('orderForm'));
 const envelopeInput = document.getElementById('envelopeInput');
-const provinceSelect = document.getElementById('provinceSelect');
-const localitySelect = document.getElementById('localitySelect');
+const envelope_amount = document.getElementById('envelope_amount');
+const addressInput = document.getElementById('addressInput');
+
+const showOrderModal = document.getElementById("showOrderModal");
+const createOrderButton = document.getElementById("createOrderButton");
+const confirmOrderButton = document.getElementById('confirmOrderButton');
 const pickupCheckbox = document.getElementById('pickupCheckbox');
 const payCheckbox = document.getElementById('payCheckbox');
-const addressInput = document.getElementById('addressInput');
-const envelope_amount = document.getElementById('envelope_amount');
 
+const provinceSelect = document.getElementById('provinceSelect');
+const localitySelect = document.getElementById('localitySelect');
+
+const alpineOrder = Alpine.$data(orderModal);
 let table;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -48,9 +54,10 @@ function showNotification(icon, title, timer = 3000){
 };
 
 function showDetails(data) {
+    console.log(data);
     return (
         `
-        <div class="d-flex flex-column my-2">
+        <div class="d-flex flex-column my-2" id="detailOrder">
             <div class="text-center mb-3">
                 <h2 class="text-decoration-underline link-offset-1 fs-4">Detalles de la orden</h2>
             </div>
@@ -59,21 +66,17 @@ function showDetails(data) {
                     <p><strong>Fecha de creacion:</strong> ${data.creation_date}</p>
                     <p><strong>Numero de seguimiento:</strong> ${data.tracking_number}</p>
                     <p><strong>Proveedor:</strong> ${data.supplier}</p>
-                    <p class="mb-0"><strong>Cliente:</strong> ${data.customer}</p>
+                    <p><strong>Cliente:</strong> ${data.customer}</p>
                 </div>
                 <div class="shipment-status text-center">
                     <p><strong>Fecha de entrega:</strong> ${data.update_date}</p>
                     <p><strong>Numero de telefono:</strong> ${data.phone}</p>
-                    <p><strong>Estado:</strong> ${data.status_display}</p>
+                    <p><strong>Estado:</strong> ${data.status.name}</p>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <button type="button" class="btn btn-success">Confirmar</button>
-                        <button type="button" class="btn btn-danger">Eliminar</button>
+                        <button type="button" class="btn btn-success fw-medium>Confirmar</button>
+                        <button type="button" class="btn btn-danger fw-medium">Eliminar</button>
                     </div>
                 </div>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
-                ${data.status.id === 1 ? `<button class="btn btn-warning fw-medium" onclick="printQR('${dataParse}')">Reimprimir ticket</button>` : ''}
-                ${data.status.id === 3 ? `<button class="btn btn-success fw-medium" onclick="completeOrder('${data.tracking_number}')">Confirmar entrega</button>` : ''}
             </div>
         </div>
         `
@@ -97,10 +100,10 @@ function getCookie(cookieName) {
 function initializeTable() {
     if (table) {
         table.destroy();
-        $('#ordersTable').empty();
+        $('#ordersTableReceived').empty();
     }
 
-    table = new DataTable('#ordersTable', {
+    table = new DataTable('#ordersTableReceived', {
         ajax: {
             url: '/api/v1/orders/',
             type: 'GET',
@@ -117,7 +120,7 @@ function initializeTable() {
                 className: 'dt-control',
                 data: null,
                 defaultContent: '<i class="ti ti-id fs-4"></i>'
-            },  
+            },
             { 
                 data: 'tracking_number',
                 responsivePriority: 2
@@ -133,7 +136,15 @@ function initializeTable() {
             { 
                 data: 'total_amount',
                 responsivePriority: 4
-            }
+            },
+            {
+                data: 'creation_date',
+                visible: false
+            },
+            {
+                data: 'locality',
+                visible: false
+            },
         ],
         ordering: false,
         processing: true,
@@ -160,48 +171,10 @@ function initializeTable() {
     });
 };
 
-createOrder.addEventListener('click', async () => {
-    let formData = new FormData(orderForm);
-
-    try {
-        let response = await fetch('/api/v1/create_order/', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        });
-        let data = await response.json();
-
-        if (!response.ok) {
-            inputsForm.forEach(inputElement => {
-                const errorFields = data.fields;
-                const fieldName = inputElement.name;
-                
-                if (errorFields.includes(fieldName)) {
-                    inputElement.classList.add('is-invalid');
-                } else {
-                    inputElement.classList.remove('is-invalid');
-                }
-            });
-            showNotification(data.type, data.message);
-            return;
-        }
-
-        showNotification(data.type, data.message);
-
-        orderForm.reset();
-        orderModal.hide();
-    } catch (error) {
-        console.log(error.message);
-        return;
-    }
-});
-
-showOrder.addEventListener('click', async () => {
+showOrderModal.addEventListener('click', async () => {
     provinceSelect.replaceChildren(provinceSelect.firstElementChild);
     provinceSelect.selectedIndex = 0;
-    orderModal.show();
+    orderInstance.show();
 
     try {
         let response = await fetch('https://apis.datos.gob.ar/georef/api/provincias');
@@ -238,6 +211,28 @@ showOrder.addEventListener('click', async () => {
         console.error(error);
         return;
     }
+});
+
+document.getElementById('confirmOrderButton').addEventListener('click', async () => {
+    console.log('Hago click');
+    detailInstance.show();
+});
+
+orderInstance._element.addEventListener('hidden.bs.modal', () => {        
+    alpineOrder.showAddress = false;
+    alpineOrder.showEnvelope = false;
+
+    provinceSelect.replaceChildren(provinceSelect.firstElementChild);
+    localitySelect.replaceChildren(localitySelect.firstElementChild);
+
+    provinceSelect.selectedIndex = 0;
+    localitySelect.selectedIndex = 0;
+
+    inputsForm.forEach(inputElement => {
+        inputElement.classList.remove('is-invalid');
+    });
+
+    orderForm.reset();
 });
 
 provinceSelect.addEventListener('change', async (e) => {
@@ -280,19 +275,73 @@ provinceSelect.addEventListener('change', async (e) => {
     }
 });
 
-orderModal._element.addEventListener('hidden.bs.modal', () => {        
-    alpineOrder.showAddress = false;
-    alpineOrder.showEnvelope = false;
+window.createOrder = async () => {
+    let formData = new FormData(orderForm);
+    alpineOrder.loading = true;
 
-    provinceSelect.replaceChildren(provinceSelect.firstElementChild);
-    localitySelect.replaceChildren(localitySelect.firstElementChild);
+    try {
+        let response = await fetch('/api/v1/create_order/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        let data = await response.json();
 
-    provinceSelect.selectedIndex = 0;
-    localitySelect.selectedIndex = 0;
+        if (!response.ok) {
+            if (response.status === 400) {
+                inputsForm.forEach(inputElement => {
+                    const errorFields = data.fields;
+                    const fieldName = inputElement.name;
+    
+                    if (errorFields.includes(fieldName)) {
+                        inputElement.classList.add('is-invalid');
+                    } else {
+                        inputElement.classList.remove('is-invalid');
+                    }
+                });
+ 
+                showNotification(data.type, data.message);
+                return;
+            }
+        }
+        
+        showNotification(data.type, data.message);
 
-    inputsForm.forEach(inputElement => {
-        inputElement.classList.remove('is-invalid');
-    });
+        orderForm.reset();
+        orderInstance.hide();
+    } catch (error) {
+        console.log(error.message);
+        return;
+    } finally {
+        alpineOrder.loading = false;
+    }
+};
 
-    orderForm.reset();
-});
+window.confirmOrder = async (trackingNumber) => {
+    try {
+        let response = await fetch(`/api/v1/complete_order/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tracking_number: trackingNumber
+            })
+        });
+        let data = await response.json();
+
+        if (!response.ok) {
+            showNotification(data.type, data.message);
+            return;
+        }
+
+        showNotification(data.type, data.message);
+        table.ajax.reload();
+    } catch (error) {
+        console.log(error.message);
+        return;
+    }
+};

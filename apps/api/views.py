@@ -1,12 +1,20 @@
+import logging
 import requests
 import uuid
-import logging
-from .models import Orders, Shipments, Parameters, PackagePrices, PackageTypes
-from .serializers import OrderCreateSerializer, OrderSerializer, ShipmentSerializer, ShipmentSearchSerializer, ShipmentCreateSerializer, PackagePricesSerializer, PackageTypesSerializer
+import random
+
+from .models import Orders, Shipments, Parameters, PackagePrices, PackageTypes, OrdersStatus, ShipmentsStatus
+
+from .serializers import (
+    OrderSerializer, OrderCreateSerializer, 
+    ShipmentSerializer, ShipmentCreateSerializer,
+    ShipmentSearchSerializer
+)
 
 from rest_framework.views import APIView
-from rest_framework.response import Response, Serializer
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
+from rest_framework import status
 
 from django.shortcuts import get_object_or_404
 from django.http import Http404
@@ -14,11 +22,11 @@ from django.http import Http404
 logger = logging.getLogger(__name__)
 
 class OrdersView(ListAPIView):
-    queryset = Orders.objects.filter(status__in=['REC']).order_by('-creation_date')
+    queryset = Orders.objects.filter(status__abbreviation='REC')
     serializer_class = OrderSerializer
 
 class ShipmentsView(ListAPIView):
-    queryset = Shipments.objects.all()
+    queryset = Shipments.objects.filter(status__abbreviation__in=['ESO', 'ECD', 'ESD'])
     serializer_class = ShipmentSerializer
 
 class CreateOrderView(APIView):
@@ -26,56 +34,148 @@ class CreateOrderView(APIView):
         serializer = OrderCreateSerializer(data=request.data)
 
         if not serializer.is_valid():
-            error_fields = list(serializer.errors.keys())
-
             return Response({
                 'type': 'warning',
                 'message': 'Complete los campos requeridos',
-                'fields': error_fields
-            }, status=400)
+                'fields': list(serializer.errors.keys())
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validated_data = serializer.validated_data
             
             total = 0
-
+            
             if validated_data.get('package_pickup'):
                 total += 2500
-
-            if validated_data.get('envelope_amount'):
-                total += validated_data['envelope_amount'] * 0.01
             
-            validated_data['supplier'] = validated_data['supplier'].upper()
-            validated_data['customer'] = validated_data['customer'].upper()
+            envelope_amount = validated_data.get('envelope_amount', 0)
+            if envelope_amount > 0:
+                total += envelope_amount * 0.01
 
-            if validated_data.get('local_address'):
-                validated_data['local_address'] = validated_data['local_address'].upper()
+            supplier = validated_data.pop('supplier').upper()
+            customer = validated_data.pop('customer').upper()
+            
+            if validated_data.get('package_pickup'):
+                local_address = validated_data.pop('local_address').upper()
+                validated_data['local_address'] = local_address
 
+            tracking_number = f"ORD-{uuid.uuid4().hex[:8].upper()}"
+    
             order = Orders.objects.create(
-                tracking_number=f"ORD-{str(uuid.uuid4())[:8].upper()}",
+                tracking_number=tracking_number,
                 total_amount=total,
+                supplier=supplier,
+                customer=customer,
                 **validated_data
             )
 
             return Response({
                 'type': 'success',
-                'message': 'Orden creada con exito',
+                'message': 'Orden creada con éxito',
                 'order': OrderSerializer(order).data
-            }, status=201)
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            logger.error(f"Ocurrio un error inesperado en la vista", exc_info=True)
-
+            logger.error(exc_info=True)
             return Response({
                 'type': 'error',
-                'message': f'Ocurrio un error interno en el servidor: {e}',
-            }, status=500)
+                'message': f'Ocurrió un error interno en el servidor: {e}.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CompleteOrderView(APIView):
+    def post(self, request, *args, **kwargs):
+        tracking_number = request.data.get('tracking_number')
+
+        if not tracking_number:
+            logger.warning("Intento de completar orden sin proporcionar tracking_number en el cuerpo de la peticion.")
+            return Response(
+                {
+                    'type': 'error',
+                    'message': 'El parametro "tracking_number" es requerido en el cuerpo de la peticion.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            order = get_object_or_404(Orders, tracking_number=tracking_number)
+
+            if order.status.abbreviation == 'COM':
+                logger.warning(f"Intento de completar orden {tracking_number} que ya se encuentra en estado 'COM'.")
+                return Response(
+                    {
+                        'type': 'error',
+                        'message': f'La orden {tracking_number} ya se encuentra completada.'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if order.package_pickup:
+                try:
+                    confirmation_pin = random.randint(1000, 9999)
+
+                    shipment = Shipments.objects.create(
+                        tracking_number=order.tracking_number,
+                        confirmation_pin=confirmation_pin,
+                        status=ShipmentsStatus.objects.get(abbreviation='ESO'),
+                        package_type=PackageTypes.objects.get(abbreviation='PAQ'),
+                        package_pickup=order.package_pickup,
+                        package_amount=package_amount,
+                        sender=order.supplier,
+                        recipient=order.customer,
+                        phone=order.phone,
+                        total_amount=order.total_amount,
+                    )
+
+                    print(shipment)
+
+                except Exception as e:
+                    logger.exception(f"Error al crear el shipment para la orden {order.tracking_number}", exc_info=True)
+                    return Response(
+                        {
+                            'type': 'error',
+                            'message': f'Error al completar la orden {tracking_number}: {e}'
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+            order.status = OrdersStatus.objects.get(abbreviation='COM')
+            order.save()
+
+            response_data = {
+                'type': 'success',
+                'message': f'Orden {tracking_number} completada con exito.',
+            }
+
+            if shipment:
+                response_data['shipment'] = ShipmentSerializer(shipment).data
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Http404:
+            logger.warning(f"Orden {tracking_number} no encontrada para completar.", exc_info=True)
+            return Response(
+                {
+                    'type': 'error',
+                    'message': f'Error al completar orden {tracking_number}, no encontrada o inexistente.'
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.exception(f"Error interno al completar orden {tracking_number}.", exc_info=True)
+            return Response(
+                {
+                    'type': 'error',
+                    'message': f'Ocurrió un error interno en el servidor: {e}.'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class CreateShipmentView(APIView):
     serializer_class = ShipmentCreateSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         serializer = ShipmentCreateSerializer(data=request.data)
+
         if not serializer.is_valid():
                 return Response({
                     'message': f'Faltan los campos requeridos',

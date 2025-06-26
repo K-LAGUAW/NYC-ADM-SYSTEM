@@ -1,7 +1,15 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter
 from django.db import models
-from .models import Shipments, Parameters, PackageTypes, PaymentsTypes, PackagePrices, Orders
+from .models import Shipments, Parameters, PackageTypes, PaymentsTypes, PackagePrices, Orders, ShipmentsStatus, OrdersStatus
+
+@admin.register(ShipmentsStatus)
+class ShipmentsStatusAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(OrdersStatus)
+class OrdersStatusAdmin(admin.ModelAdmin):
+    pass
 
 @admin.register(PackageTypes)
 class PackageTypesAdmin(admin.ModelAdmin):
