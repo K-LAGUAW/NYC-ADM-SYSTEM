@@ -3,107 +3,34 @@ const orderInstance = bootstrap.Modal.getOrCreateInstance(orderModal);
 const detailModal = document.getElementById('detailModal');
 const detailInstance = bootstrap.Modal.getOrCreateInstance(detailModal);
 
+const ordersTable = document.getElementById('ordersTable');
 const orderForm = document.getElementById("orderForm");
 const inputsForm = orderForm.querySelectorAll('[name]');
 const envelopeInput = document.getElementById('envelopeInput');
-const envelope_amount = document.getElementById('envelope_amount');
-const addressInput = document.getElementById('addressInput');
+const envelopeInputValue = document.getElementById('envelopeInputValue');
+const phoneInput = document.getElementById('phoneInput');
 
 const showOrderModal = document.getElementById("showOrderModal");
-const createOrderButton = document.getElementById("createOrderButton");
 const confirmOrderButton = document.getElementById('confirmOrderButton');
-const pickupCheckbox = document.getElementById('pickupCheckbox');
-const payCheckbox = document.getElementById('payCheckbox');
 
 const provinceSelect = document.getElementById('provinceSelect');
 const localitySelect = document.getElementById('localitySelect');
 
-const alpineOrder = Alpine.$data(orderModal);
+let alpineOrder;
 let table;
+let expandedRows = new Set();
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeTable();
+    alpineOrder = Alpine.$data(orderModal);
 });
-
-function showNotification(icon, title, timer = 3000){
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: timer,
-        showClass: {
-            popup: `
-                animate__animated
-                animate__fadeInRight
-                animate__faster
-            `
-        },
-        hideClass: {
-            popup: `
-                animate__animated
-                animate__fadeOutRight
-                animate__faster
-            `
-        }
-    });
-
-    Toast.fire({
-        icon: icon,
-        title: title
-    });
-};
-
-function showDetails(data) {
-    console.log(data);
-    return (
-        `
-        <div class="d-flex flex-column my-2" id="detailOrder">
-            <div class="text-center mb-3">
-                <h2 class="text-decoration-underline link-offset-1 fs-4">Detalles de la orden</h2>
-            </div>
-            <div class="d-flex flex-column flex-lg-row align-items-center justify-content-center justify-content-md-around mb-3">
-                <div class="shipment-details text-center">
-                    <p><strong>Fecha de creacion:</strong> ${data.creation_date}</p>
-                    <p><strong>Numero de seguimiento:</strong> ${data.tracking_number}</p>
-                    <p><strong>Proveedor:</strong> ${data.supplier}</p>
-                    <p><strong>Cliente:</strong> ${data.customer}</p>
-                </div>
-                <div class="shipment-status text-center">
-                    <p><strong>Fecha de entrega:</strong> ${data.update_date}</p>
-                    <p><strong>Numero de telefono:</strong> ${data.phone}</p>
-                    <p><strong>Estado:</strong> ${data.status.name}</p>
-                    <div class="d-flex align-items-center justify-content-center gap-2">
-                        <button type="button" class="btn btn-success fw-medium>Confirmar</button>
-                        <button type="button" class="btn btn-danger fw-medium">Eliminar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `
-    );
-};
-
-function getCookie(cookieName) {
-    const name = cookieName + '=';
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookieArray = decodedCookie.split(';');
-
-    for (let cookie of cookieArray) {
-        cookie = cookie.trim(); 
-        if (cookie.indexOf(name) === 0) {
-            return cookie.substring(name.length, cookie.length);
-        }
-    }
-    return null;
-};  
 
 function initializeTable() {
     if (table) {
         table.destroy();
-        $('#ordersTableReceived').empty();
     }
 
-    table = new DataTable('#ordersTableReceived', {
+    table = new DataTable(ordersTable, {
         ajax: {
             url: '/api/v1/orders/',
             type: 'GET',
@@ -117,25 +44,38 @@ function initializeTable() {
         ],
         columns: [
             {
-                className: 'dt-control',
                 data: null,
-                defaultContent: '<i class="ti ti-id fs-4"></i>'
+                defaultContent: '<i class="ti ti-id fs-4 detail-control" style="cursor: pointer;"></i>',
+                responsivePriority: 0,
+                searchable: false
             },
-            { 
+            {
                 data: 'tracking_number',
                 responsivePriority: 2
             },
-            { 
+            {
                 data: 'supplier',
                 responsivePriority: 3
             },
-            { 
+            {
                 data: 'customer',
                 responsivePriority: 1
             },
-            { 
+            {
                 data: 'total_amount',
-                responsivePriority: 4
+                responsivePriority: 4,
+                searchable: false,
+                render: function (data, type, row) {
+                    if (type === 'display' || type === 'filter') {
+                        if (data > 0) {
+                            return `<p class="text-success mb-0 fs-6 fw-bold">${data}</p>`;
+                        } else {
+                            return '<i class="ti ti-currency-dollar-off d-block text-danger fs-5 fw-bold" style="line-height: 0;"></i>';
+                        }
+                    }
+                    return data;
+                },
+
             },
             {
                 data: 'creation_date',
@@ -145,6 +85,21 @@ function initializeTable() {
                 data: 'locality',
                 visible: false
             },
+            {
+                title: 'Monto del Sobre',
+                data: 'envelope_amount',
+                visible: false,
+                searchable: false,
+                render: function (data, type, row) {
+                    if (type === 'display' || type === 'filter' || type === 'sort') {
+                        if (data !== null && data !== undefined) {
+                            return parseFloat(data).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: true });
+                        }
+                        return data;
+                    }
+                    return data;
+                }
+            }
         ],
         ordering: false,
         processing: true,
@@ -155,25 +110,81 @@ function initializeTable() {
         info: false,
         language: {
             url: '/static/json/es.json'
-        }
+        },
+        dom: "<'mb-2 d-flex justify-content-between p-0 m-0' <'d-inline' B> <f> >" + "<'row'<'col-md-12'tr>>",
+        buttons: [
+            {
+                text: '<i class="ti ti-printer fs-5 d-block"></i>',
+                extend: 'print',
+                className: 'btn btn-success',
+                title: 'Orden de Traslado',
+                exportOptions: {
+                    columns: [2, 3, 7],
+                    rows: function (idx, data, node) {
+                        return data.envelope_amount > 0 ? true : false;
+                    }
+                }
+            }
+        ]
     });
 
-    table.on('click', 'td.dt-control', (e) => {
+    table.on('click', '.detail-control', function (e) {
         let tr = e.target.closest('tr');
         let row = table.row(tr);
+        let rowData = row.data();
+        let trackingNumber = rowData.tracking_number;
 
         if (row.child.isShown()) {
             row.child.hide();
+            expandedRows.delete(trackingNumber);
+        } else {
+            row.child(showDetails(rowData)).show();
+            expandedRows.add(trackingNumber);
         }
-        else {
-            row.child(showDetails(row.data())).show();
+    });
+
+    table.on('draw.dt', function () {
+        if (expandedRows.size > 0) {
+            table.rows().every(function () {
+                let rowData = this.data();
+                if (rowData && expandedRows.has(rowData.tracking_number)) {
+                    if (!this.child.isShown()) {
+                        this.child(showDetails(rowData)).show();
+                    }
+                }
+            });
         }
     });
 };
 
+function showDetails(data) {
+    console.log(data);
+    return (
+        `
+        <div class="d-flex flex-column gap-2 my-2" id="detailOrder">
+            <div class="text-center">
+                <h2 class="text-decoration-underline link-offset-1 fs-4">Detalles de la orden</h2>
+            </div>
+            <div class="d-flex flex-column gap-2 flex-lg-row align-items-center justify-content-center justify-content-md-around">
+                <div class="d-flex flex-column gap-2 text-center">
+                    <p class="mb-0"><strong>Fecha de creación:</strong> ${data.creation_date}</p>
+                    <p class="mb-0"><strong>Número de seguimiento:</strong> ${data.tracking_number}</p>
+                    <p class="mb-0"><strong>Proveedor:</strong> ${data.supplier}</p>
+                    <p class="mb-0"><strong>Cliente:</strong> ${data.customer}</p>
+                </div>
+                <div class="d-flex flex-column gap-2 text-center">
+                    ${data.local_address ? `<p class="mb-0"><strong>Dirección de retiro:</strong> ${data.local_address}</p>` : ''}
+                    <p class="mb-0"><strong>Número de telefono:</strong> ${data.phone}</p>
+                    <p class="mb-0"><strong>Estado:</strong> ${data.status.name}</p>
+                </div>
+            </div>
+        </div>
+        `
+    );
+};
+
 showOrderModal.addEventListener('click', async () => {
     provinceSelect.replaceChildren(provinceSelect.firstElementChild);
-    provinceSelect.selectedIndex = 0;
     orderInstance.show();
 
     try {
@@ -213,20 +224,12 @@ showOrderModal.addEventListener('click', async () => {
     }
 });
 
-document.getElementById('confirmOrderButton').addEventListener('click', async () => {
-    console.log('Hago click');
-    detailInstance.show();
-});
-
 orderInstance._element.addEventListener('hidden.bs.modal', () => {        
     alpineOrder.showAddress = false;
     alpineOrder.showEnvelope = false;
 
     provinceSelect.replaceChildren(provinceSelect.firstElementChild);
     localitySelect.replaceChildren(localitySelect.firstElementChild);
-
-    provinceSelect.selectedIndex = 0;
-    localitySelect.selectedIndex = 0;
 
     inputsForm.forEach(inputElement => {
         inputElement.classList.remove('is-invalid');
@@ -275,9 +278,60 @@ provinceSelect.addEventListener('change', async (e) => {
     }
 });
 
+phoneInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+
+    if (e.target.value.length > 11) {
+        e.target.value = e.target.value.slice(0, 11);
+    }
+});
+
+envelopeInput.addEventListener('input', (e) => {
+    let value = e.target.value;
+    const cursorPosition = e.target.selectionStart;
+
+    const cleanedValue = value.replace(/[^\d,]/g, '');
+
+    if (!cleanedValue) {
+        e.target.value = '';
+        envelopeInputValue.value = '';
+        return;
+    }
+
+    const numericValue = cleanedValue.replace(',', '.');
+    const numberValue = parseFloat(numericValue);
+
+    if (isNaN(numberValue)) {
+        return;
+    }
+
+    envelopeInputValue.value = numberValue;
+
+    const formatter = new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+        useGrouping: true
+    });
+
+    const lengthBeforeFormat = value.length;
+    const formattedValue = formatter.format(numberValue);
+    e.target.value = formattedValue;
+
+    const lengthAfterFormat = formattedValue.length;
+    const lengthDifference = lengthAfterFormat - lengthBeforeFormat;
+    
+    const newCursorPosition = cursorPosition + lengthDifference;
+    e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+});
+
 window.createOrder = async () => {
     let formData = new FormData(orderForm);
-    alpineOrder.loading = true;
+
+    for (let pair of formData.entries()) {
+        console.log(pair[0]+ ': ' + pair[1]);
+    }
+
+    alpineOrder.isLoading = true;
 
     try {
         let response = await fetch('/api/v1/create_order/', {
@@ -301,13 +355,26 @@ window.createOrder = async () => {
                         inputElement.classList.remove('is-invalid');
                     }
                 });
- 
-                showNotification(data.type, data.message);
+
+                showNotification(data.type, data.title, data.message);
                 return;
             }
         }
-        
+
         showNotification(data.type, data.message);
+
+        if (data.order.supplier_payment) {
+            detailInstance._element.querySelector('.modal-body').innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                    <h2 class="text-center text-decoration-underline link-offset-1 fs-4 mb-0">Numero de orden generado</h2>
+                    <p class="text-center fw-semibold fs-4 mb-0">${data.order.tracking_number}</p>
+                </div>
+            `;
+
+            detailInstance.show();
+        }
+
+        table.ajax.reload();
 
         orderForm.reset();
         orderInstance.hide();
@@ -315,7 +382,7 @@ window.createOrder = async () => {
         console.log(error.message);
         return;
     } finally {
-        alpineOrder.loading = false;
+        alpineOrder.isLoading = false;
     }
 };
 

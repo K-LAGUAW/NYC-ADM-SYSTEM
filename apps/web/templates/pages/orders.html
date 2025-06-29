@@ -3,33 +3,27 @@
 {% load static %}
 
 {% block customCSS %}
-<link rel="stylesheet"
-    href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.css"
-    integrity="sha384-2Kog+xBHckFllab8GPEP0fmBUYJmdKFV6H8W6aCAO+er+nOxf6BKbg/pmKdwB/5l" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-<link rel="stylesheet" href="{% static 'css/orders.css' %}">
+    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/jszip-3.10.1/dt-2.3.2/b-3.2.3/b-html5-3.2.3/b-print-3.2.3/fh-4.0.3/r-3.0.4/sc-2.4.3/datatables.min.css" rel="stylesheet" integrity="sha384-SEMM86dFA3DMhYX9R4cJ2KgR/PHGyHCuYsy2p+XMEXLlW0fEfWNAEmzdIflu0rGp" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/orders.css' %}">
 {% endblock %}
 
 {% block customJS %}
-<script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.js"
-    integrity="sha384-HNFSeuNc7s2HGzGjNFV/i0XipmC7zJwvuovdipYIHXhmXWV2bBAj7AQ3A03h5wiI"
-    crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
-    integrity="sha256-PtHu0lJIiSHfZeNj1nFd6wTX+Squ255SGZ/fc8seCtM=" crossorigin="anonymous"></script>
-<script src="{% static 'js/orders.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/jszip-3.10.1/dt-2.3.2/b-3.2.3/b-html5-3.2.3/b-print-3.2.3/r-3.0.4/sc-2.4.3/datatables.min.js" integrity="sha384-qBHDINhbEzGH/c6KOQpSKvoRztPqsYuG3hEwy5+oKmbp+MGhw8PESIb0aIF1g+vp" crossorigin="anonymous"></script>
+    <script src="{% static 'js/orders.js' %}"></script>
 {% endblock %}
 
 {% block content %}
     {% include 'components/navbar.html' %}
     <div class="position-fixed bottom-0 end-0 m-3 z-3">
         <button type="button" class="btn btn-success d-flex justify-content-center align-items-center py-2" id="showOrderModal">
-            <i class="ti ti-clipboard-text fs-5"></i>
+            <i class="ti ti-clipboard-text fs-5 d-block"></i>
         </button>
     </div>
 
     <div class="container">
-        <table class="table table-bordered" id="ordersTableReceived">
+        <table class="table table-bordered" id="ordersTable">
             <thead>
                 <tr>
                     <th class="text-center"><i class="ti ti-info-circle-filled fs-3"></i></th>
@@ -43,7 +37,7 @@
         </table>
     </div>
 
-    <div class="modal fade" id="orderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true" x-data="{ showAddress: false, showEnvelope: false, loading: false }">
+    <div class="modal fade" id="orderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true" x-data="{ showAddress: false, showEnvelope: false, isLoading: false }">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-black text-white">
@@ -59,14 +53,12 @@
                                     <label for="supplierInput">Proveedor</label>
                                 </div>
                             </div>
-                            <template x-if="showAddress">
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control shadow-none" name="local_address" id="addressInput" placeholder="">
-                                        <label for="addressInput">Direccion del local</label>
-                                    </div>
+                            <div class="col-md-6" x-show="showAddress">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control shadow-none" name="local_address" id="addressInput" placeholder="">
+                                    <label for="addressInput">Direccion del local</label>
                                 </div>
-                            </template>
+                            </div>
                             <div class="col-md-6">
                                 <div class="form-floating">
                                     <input type="text" class="form-control shadow-none" name="customer" id="customerInput" placeholder="">
@@ -89,19 +81,18 @@
                                     <option selected disabled>Localidad</option>
                                 </select>
                             </div>
-                            <template x-if="showEnvelope">
-                                <div class="col-12">
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text text-bg-success">
-                                            <i class="ti ti-currency-dollar fs-5"></i>
-                                        </span>
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control shadow-none" name="envelope_amount" id="envelopeInput" placeholder="">
-                                            <label for="envelopeInput">Importe de sobre</label>
-                                        </div>
+                            <div class="col-12" x-show="showEnvelope">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text text-bg-success">
+                                        <i class="ti ti-currency-dollar fs-5"></i>
+                                    </span>
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control shadow-none" id="envelopeInput" placeholder="">
+                                        <input type="hidden" name="envelope_amount" id="envelopeInputValue">
+                                        <label for="envelopeInput">Importe de sobre</label>
                                     </div>
                                 </div>
-                            </template>
+                            </div>
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input shadow-none" type="checkbox" role="switch" name="package_pickup" id="pickupCheckbox" x-model="showAddress">
@@ -116,7 +107,7 @@
                             </div>
                         </form>
                         
-                        <template x-if="loading">
+                        <template x-if="isLoading">
                             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75 z-3">
                                 <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status"></div>
                             </div>
@@ -124,7 +115,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-black">
-                    <button type="button" class="btn btn-success fw-medium" id="createOrderButton" :disabled="loading" @click="createOrder()">Crear orden</button>
+                    <button type="button" class="btn btn-success fw-medium" id="createOrderButton" :disabled="isLoading" @click="createOrder()">Crear orden</button>
                 </div>
             </div>
         </div>
@@ -135,11 +126,10 @@
             <div class="modal-content">
                 <div class="modal-header bg-black text-white">
                     <h1 class="modal-title fs-5">Detalles de la orden</h1>
-                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body"></div>
                 <div class="modal-footer bg-black">
-                    <button type="button" class="btn btn-success fw-medium" id="confirmOrderButton">Aceptar</button>
+                    <button type="button" class="btn btn-success fw-medium" data-bs-dismiss="modal">Aceptar</button>
                 </div>
             </div>
         </div>

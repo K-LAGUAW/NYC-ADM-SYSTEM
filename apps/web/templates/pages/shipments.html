@@ -9,6 +9,7 @@
 
 {% block customJS %}
     <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.3.0/fh-4.0.1/r-3.0.4/sc-2.4.3/datatables.min.js" integrity="sha384-HNFSeuNc7s2HGzGjNFV/i0XipmC7zJwvuovdipYIHXhmXWV2bBAj7AQ3A03h5wiI" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ua-parser-js/dist/ua-parser.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="{% static 'js/shipments.js' %}"></script>
 {% endblock %}
@@ -30,7 +31,7 @@
     </div>
 
     <div class="d-flex flex-column gap-2 position-fixed bottom-0 end-0 m-3">
-        <button type="button" class="btn btn-primary d-flex justify-content-center align-items-center py-2" id="showConfig">
+        <button type="button" class="btn btn-primary d-flex justify-content-center align-items-center py-2" id="showPrinterModal">
             <i class="ti ti-settings fs-5"></i>
         </button>
         <button type="button" class="btn btn-warning d-flex justify-content-center align-items-center py-2" id="scanQr">
@@ -103,18 +104,26 @@
         </div>
     </div>
 
-    <div class="modal fade" tabindex="-1" id="configModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" tabindex="-1" id="printerModal" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true" x-data="{ isLoading, withoutPrinters}">
+        <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Configuracion de impresora</h5>
-              <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-black text-white">
+                <h5 class="modal-title">Configuracion de impresora</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <select class="form-select py-3 shadow-none" id="printerSelect"></select>
+                <select class="form-select py-3 shadow-none" id="printerSelect" :disabled="withoutPrinters">
+                    <option selected disabled>Seleccione una impresora</option>
+                </select>
+
+                <template x-if="isLoading">
+                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75 z-3">
+                        <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status"></div>
+                    </div>
+                </template>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="printerButton">Guardar</button>
+            <div class="modal-footer bg-black">
+                <button type="button" class="btn btn-success" id="printerButton" :disabled="withoutPrinters" @click="savePrinter()">Guardar</button>
             </div>
           </div>
         </div>

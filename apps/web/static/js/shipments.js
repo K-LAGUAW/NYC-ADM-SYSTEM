@@ -1,73 +1,42 @@
-// ============= Variables Globales =============
-let scanner;
-let table;
-
-// ============= Elementos del DOM =============
-// Botones principales
-const showConfig = document.getElementById('showConfig');
+const showPrinterModal = document.getElementById('showPrinterModal');
 const scanQr = document.getElementById('scanQr');
 const showShipment = document.getElementById('showShipment');
 
-// Elementos del formulario
 const typeSelect = document.getElementById('typeSelect');
 const priceSelect = document.getElementById('priceSelect');
 
-// Elementos del paquete
 const packageContainer = document.getElementById('packageContainer');
 const packageCheckbox = document.getElementById('packageCheckbox');
 
-// Elementos del remitente
 const senderContainer = document.getElementById('senderContainer');
 const senderInput = document.getElementById('senderInput');
 
-// Elementos del sobre
 const envelopeContainer = document.getElementById('envelopeContainer');
 const envelopeInput = document.getElementById('envelopeInput');
 
-// Elementos del modal shipment
 const shipmentModal = new bootstrap.Modal(document.getElementById('shipmentModal'));
 const shipmentForm = document.getElementById('shipmentForm');
 const shipmentButton = document.getElementById('shipmentButton');
 const shipmentSpinner = document.getElementById('shipmentSpinner');
 
-// Elementos del modal qr
 const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
 const qrSpinner = document.getElementById('qrSpinner');
 
-// Elementos del modal config
-const configModal = new bootstrap.Modal(document.getElementById('configModal'));
+const printerModal = document.getElementById('printerModal');
+const printerModalInstance = new bootstrap.Modal(printerModal);
 const printerSelect = document.getElementById('printerSelect');
-const printerButton = document.getElementById('printerButton');
 
-// ============= Funciones Utilitarias =============
-function getCookie(cookieName) {
-    const name = cookieName + '=';
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookieArray = decodedCookie.split(';');
+let scanner;
+let table;
+let uap;
+let alpinePrinter;
 
-    for (let cookie of cookieArray) {
-        cookie = cookie.trim();
-        if (cookie.indexOf(name) === 0) {
-            return cookie.substring(name.length, cookie.length);
-        }
-    }
-    return null;
-}
-
-function showNotification(type, title, message, time = 3000) {
-    Swal.mixin({
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: time,
-        timerProgressBar: true
-    }).fire({
-        icon: type,
-        title: title,
-        text: message
-    });
-}
-
+document.addEventListener('DOMContentLoaded', function () {
+    alpinePrinter = Alpine.$data(printerModal);
+    uap = new UAParser();
+    
+    initializeTable();
+});
 
 async function completeShipment(tracking_number) {
     try {
@@ -90,9 +59,8 @@ async function completeShipment(tracking_number) {
     } catch (error) {
         showNotification('error', 'Error al completar la entrega del envío');
     }
-}
+};
 
-// ============= Funciones de Tabla =============
 function initializeTable() {
     if (table) {
         table.destroy();
@@ -145,7 +113,7 @@ function initializeTable() {
             row.child(showDetails(row.data())).show();
         }
     });
-}
+};
 
 function showDetails(data) {
     const dataParse = 'ASD'
@@ -180,9 +148,8 @@ function showDetails(data) {
         </div>
         `
     );
-}
+};
 
-// ============= Funciones de Impresión =============
 async function printQR(data) {
     const payload = {
         nombreImpresora: getCookie('selectedPrinter'),
@@ -271,9 +238,8 @@ async function printQR(data) {
     } catch (error) {
         showNotification('error', 'El servicio de impresión no esta disponible, reimprima manualmente');
     }
-}
+};
 
-// ============= Funciones de Escaneo QR =============
 async function qrScanSuccess(decodedText) {
     await scanner.clear();
 
@@ -302,15 +268,8 @@ async function qrScanSuccess(decodedText) {
         qrSpinner.classList.add('d-none');
         qrModal.hide();
     }
-}
+};
 
-// ============= Event Listeners =============
-// Inicialización
-document.addEventListener('DOMContentLoaded', function () {
-    initializeTable();
-});
-
-// Event Listeners - Modal de Envíos
 showShipment.addEventListener('click', async () => {
     try {
         const response = await fetch('/api/v1/packages_categories/');
@@ -429,7 +388,6 @@ shipmentModal._element.addEventListener('hidden.bs.modal', function () {
     priceSelect.innerHTML = '';
 });
 
-// Event Listeners - Modal QR
 scanQr.addEventListener('click', () => {
     scanner = new Html5QrcodeScanner("qr-reader", {
         fps: 10,
@@ -448,26 +406,63 @@ qrModal._element.addEventListener('hide.bs.modal', async function () {
     }
 });
 
-// Event Listeners - Modal Configuración
-showConfig.addEventListener('click', async () => {
-    try {
-        const response = await fetch("http://localhost:2811/impresoras");
-        const printerList = await response.json();
-
-        printerSelect.innerHTML = '';
-
-        printerList.forEach(printer => {
-            printerSelect.innerHTML += `<option value="${printer}">${printer}</option>`;
-        });
-    } catch (e) {
-        console.log(e);
+const handlePrinter = (printers, mapFn = printer => printer) => {
+    if (printers.length === 0) {
+        showNotification('info', 'Error de dispositivo', 'No se encontraron impresoras disponibles.');
+        return false;
     }
 
-    configModal.show();
+    printers.map(mapFn).forEach(printer => {
+        printerSelect.innerHTML += `<option value="${printer}">${printer}</option>`;
+    });
+
+    alpinePrinter.withoutPrinters = false;
+    return true;
+};
+
+showPrinterModal.addEventListener('click', async () => {
+    printerSelect.replaceChildren(printerSelect.firstElementChild);
+    printerModalInstance.show();
+    alpinePrinter.isLoading = true;
+    alpinePrinter.withoutPrinters = true;
+
+    try {
+        const response = await fetch("http://localhost:8000/impresoras");
+        const data = await response.json();
+
+        if (response.ok) {
+            const osName = uap.getOS().name;
+
+            if (osName === 'Windows') {
+                handlePrinter(data);
+            } else if (osName === 'Android') {
+                handlePrinter(data, printer => printer.mac);
+            }
+        } else {
+            showNotification('error', 'Error del servidor', 'Hubo un problema al obtener las impresoras.');
+        }
+    } catch (e) {
+        if (e.message.includes("Failed to fetch") || e.name === "TypeError") {
+            showNotification('error', 'Error de conexion', 'Verifique que el servidor de impresion este encendido.');
+        } else {
+            showNotification('error', 'Error inesperado', 'Ocurrio un desconocido.');
+        }
+    } finally {
+        alpinePrinter.isLoading = false;
+    }
 });
 
-printerButton.addEventListener('click', () => {
-    const selectedPrinter = printerSelect.value;
-    document.cookie = `selectedPrinter=${selectedPrinter};path=/;max-age=31536000`;
-    configModal.hide();
+printerModalInstance._element.addEventListener('hidden.bs.modal', () => {
+    printerSelect.replaceChildren(printerSelect.firstElementChild);
+
+    alpinePrinter.isLoading = true;
+    alpinePrinter.withoutPrinters = true;
 });
+
+window.savePrinter = () => {
+    const selectedPrinter = printerSelect.value;
+    setCookie('selectedPrinter', selectedPrinter);
+
+    showNotification('success', 'Configuracion exitosa', `La impresora ${selectedPrinter} se usara para imprimir.`);
+    printerModalInstance.hide();
+};

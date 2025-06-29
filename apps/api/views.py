@@ -3,6 +3,7 @@ import requests
 import uuid
 import random
 
+from .utils import send_whatsapp_message
 from .models import Orders, Shipments, Parameters, PackagePrices, PackageTypes, OrdersStatus, ShipmentsStatus
 
 from .serializers import (
@@ -36,7 +37,8 @@ class CreateOrderView(APIView):
         if not serializer.is_valid():
             return Response({
                 'type': 'warning',
-                'message': 'Complete los campos requeridos',
+                'title': 'Error de validacion',
+                'message': 'Complete los campos marcados.',
                 'fields': list(serializer.errors.keys())
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -48,9 +50,11 @@ class CreateOrderView(APIView):
             if validated_data.get('package_pickup'):
                 total += 2500
             
-            envelope_amount = validated_data.get('envelope_amount', 0)
+            envelope_amount = int(validated_data.get('envelope_amount') or 0)
+
             if envelope_amount > 0:
                 total += envelope_amount * 0.01
+
 
             supplier = validated_data.pop('supplier').upper()
             customer = validated_data.pop('customer').upper()
@@ -60,7 +64,16 @@ class CreateOrderView(APIView):
                 validated_data['local_address'] = local_address
 
             tracking_number = f"ORD-{uuid.uuid4().hex[:8].upper()}"
-    
+
+            notification_message = send_whatsapp_message(notification_message, order.phone)
+
+            if notification_message[1] != 200:
+                return Response({
+                    'type': 'error',
+                    'title': 'Error de api',
+                    'message': 'No se pudo enviar la notificacion a cliente.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
             order = Orders.objects.create(
                 tracking_number=tracking_number,
                 total_amount=total,
@@ -71,7 +84,8 @@ class CreateOrderView(APIView):
 
             return Response({
                 'type': 'success',
-                'message': 'Orden creada con éxito',
+                'title': 'Orden creada',
+                'message': 'Operacion realizada con exito.',
                 'order': OrderSerializer(order).data
             }, status=status.HTTP_201_CREATED)
 

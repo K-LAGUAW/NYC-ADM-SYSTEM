@@ -57,6 +57,17 @@ class PaymentsTypes(models.Model):
     def __str__(self):
         return f"{self.name} - {self.abbreviation}"
 
+class Clients(models.Model):
+    name = models.CharField(max_length=50, verbose_name="Nombre")
+    phone = models.CharField(max_length=10, verbose_name="Teléfono")
+
+    class Meta:
+        verbose_name = "cliente"
+        verbose_name_plural = "clientes"
+
+    def __str__(self):
+        return f"{self.name} - {self.phone}"
+
 class ShipmentsStatus(models.Model):
     name = models.CharField(max_length=50, verbose_name="Nombre")
     abbreviation = models.CharField(max_length=5, verbose_name="Abreviatura")
@@ -82,7 +93,7 @@ class Orders(models.Model):
     envelope_amount = models.PositiveIntegerField(blank=True, null=True, verbose_name="Importe de sobre")
     supplier_payment = models.BooleanField(verbose_name="Pago del proveedor")
     package_pickup = models.BooleanField(verbose_name="Recogida de paquete")
-    payment_type = models.ForeignKey('PaymentsTypes', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Tipo de pago")
+    total_amount = models.PositiveIntegerField(null=True, blank=True, verbose_name="Importe total")
 
     class Meta:
         verbose_name = "orden"
@@ -97,11 +108,10 @@ class Orders(models.Model):
 class Shipments(models.Model):
     tracking_number = models.CharField(max_length=11, primary_key=True, editable=False, verbose_name="Número de seguimiento")
     confirmation_pin = models.PositiveIntegerField(verbose_name="Pin de confirmación")
-    creation_date = models.DateTimeField(auto_now_add=True, editable=False, verbose_name="Fecha de creación")
+    creation_date = models.DateTimeField(auto_now=True, editable=False, verbose_name="Fecha de creación")
     update_date = models.DateTimeField(auto_now=True, verbose_name="Fecha de actualización")
     status = models.ForeignKey('ShipmentsStatus', default=1, on_delete=models.PROTECT, verbose_name="Estado actual del envío")
     package_type = models.ForeignKey('PackageTypes', on_delete=models.CASCADE, verbose_name="Tipo de paquete")
-    package_pickup = models.BooleanField(verbose_name="Recogida de paquete")
     package_amount = models.ForeignKey('PackagePrices', on_delete=models.CASCADE, verbose_name="Importe de paquete")
     total_amount = models.PositiveIntegerField(null=True, blank=True, verbose_name="Importe total")
     sender = models.CharField(max_length=50, verbose_name="Remitente")

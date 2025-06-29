@@ -1,17 +1,16 @@
-<nav class="navbar bg-dark border-bottom border-body navbar-expand-lg fixed-top shadow-sm py-1" data-bs-theme="dark">
+<nav class="navbar navbar-expand-sm fixed-top py-1" data-bs-theme="dark">
     <div class="container-fluid px-md-5">
         <a class="navbar-brand d-flex align-items-center" href="{% url 'shipments' %}">
-            <img src="https://i.postimg.cc/qMPJnfzv/449711526-996625615496458-6832983053048689051-n-2-1-removebg-preview.png" height="40" class="d-inline-block">
-            <span class="ms-2">N&C</span>
+            <img src="https://i.postimg.cc/C5QYCjDY/Dise-o-sin-t-tulo-1-removebg-preview.png" height="47" class="d-inline-block">
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+        <button class="navbar-toggler bg-black text-white px-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="ti ti-menu-2 fs-1"></i>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="{% url 'shipments' %}">Envios</a>
-                <a class="nav-link" href="{% url 'orders' %}">Ordenes</a>
+            <div class="navbar-nav bg-black text-center ms-auto rounded px-2 mt-2 mt-md-0" x-data="{ currentPath: window.location.pathname }">
+                <a class="nav-link fw-medium" :class="{ 'active': currentPath.includes('{% url 'shipments' %}') }" href="{% url 'shipments' %}">Envios</a>
+                <a class="nav-link fw-medium" :class="{ 'active': currentPath.includes('{% url 'orders' %}') }" href="{% url 'orders' %}">Ordenes</a>
             </div>
         </div>
-    </div>
+    </div>  
 </nav>
