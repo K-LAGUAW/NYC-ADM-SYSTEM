@@ -1,3 +1,4 @@
+from email import message
 import logging
 import requests
 import uuid
@@ -64,16 +65,22 @@ class CreateOrderView(APIView):
                 validated_data['local_address'] = local_address
 
             tracking_number = f"ORD-{uuid.uuid4().hex[:8].upper()}"
-
-            notification_message = send_whatsapp_message(notification_message, order.phone)
+           
+            '''
+            phone = validated_data.get('phone')
+            
+            message = Parameters.objects.get(name='WSP_ORD').value.replace('{tracking_number}', tracking_number)
+            notification_message = send_whatsapp_message(message, phone)
 
             if notification_message[1] != 200:
                 return Response({
                     'type': 'error',
                     'title': 'Error de api',
                     'message': 'No se pudo enviar la notificacion a cliente.'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                }, status=status.HTTP_403_FORBIDDEN)
             
+            '''
+
             order = Orders.objects.create(
                 tracking_number=tracking_number,
                 total_amount=total,

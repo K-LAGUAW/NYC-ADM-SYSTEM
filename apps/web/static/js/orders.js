@@ -358,7 +358,10 @@ window.createOrder = async () => {
 
                 showNotification(data.type, data.title, data.message);
                 return;
-            }
+            } /* else if (response.status === 403) {
+                showNotification(data.type, data.title, data.message);
+                return;
+            } */
         }
 
         showNotification(data.type, data.message);
