@@ -364,7 +364,7 @@ window.createOrder = async () => {
             } */
         }
 
-        showNotification(data.type, data.message);
+        showNotification(data.type, data.title, data.message);
 
         if (data.order.supplier_payment) {
             detailInstance._element.querySelector('.modal-body').innerHTML = `
